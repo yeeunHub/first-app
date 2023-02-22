@@ -8,6 +8,10 @@ from urllib.request import urlopen
 import json
 from copy import deepcopy
 from plotly.subplots import make_subplots
+import seaborn as sns
+sns.set()
+sns.set_style('whitegrid')
+import matplotlib.pyplot as plt
 
 # Loading the data
 def load_data(path):
@@ -22,12 +26,14 @@ new_df = pd.merge(internet_df, data,  how='left', left_on=['Entity','Year'], rig
 # Data cleaning
 df1=new_df[(new_df['Entity']=="North Korea") | (new_df['Entity']=="South Korea") | (new_df['Entity']=="China")| (new_df['Entity']=="Japan")]
 df2=df1[['Entity','Year','Individuals using the Internet (% of population)']]
+df5=new_df[['Entity','Year','Individuals using the Internet (% of population)','gdpPercap']]
+df5=df5[(df5['Year']==1992)| (df5['Year']==1997)| (df5['Year']==2002)|(df5['Year']==2007)]
 
 # pivot data
 df3=df2.pivot(index='Year', columns='Entity', values='Individuals using the Internet (% of population)')
 
 # Add title and header
-st.title("Cool Internet Speed Map")
+st.title("Internet across the world")
 st.header("Choropleth Map")
 
 # Creat checkbox for showing the dataframe
@@ -54,30 +60,12 @@ fig = px.choropleth_mapbox(df2,
                            mapbox_style="carto-positron", zoom=2)
 st.plotly_chart(fig)
 
-st.header("GDP")
-df4=df1[['Entity','Year','Individuals using the Internet (% of population)','gdpPercap']]
-fig1 = px.choropleth_mapbox(df4, 
-                           geojson=geo_ds, 
-                           color="gdpPercap",
-                           locations="Entity", 
-                           featureidkey="properties.ADMIN",  #the point for combining the two data sets "geojson", 'ds'
-                           center={"lat": 35.9078, "lon": 127.7669},
-                           mapbox_style="carto-positron", zoom=2)
-st.plotly_chart(fig1)
+st.header("Association between GDP and internet usage")
+
+lm = sns.lmplot(x="gdpPercap", y="Individuals using the Internet (% of population)", hue="Year", data=df5,
+                     height=9, aspect=1.6, robust=True, palette='tab10',
+                     scatter_kws=dict(s=100, linewidths=.9, edgecolors='black'))
 
 
-# st.header("Multigroup Regression analysis between GDP and internet usage")
 
-# import seaborn as sns
-
-# #create scatterplot with regression line
-# import seaborn as sns
-# sns.set()
-# sns.set_style('whitegrid')
-
-# countries = ['China','Japen']
-# df5 = df4[df4['Entity'].isin(countries)]
-# # sns.lmplot(x="year", y="pop", data=europeData, hue='country',
-# #    order=2, ci=False)
-# fig2 = sns.regplot(data=df5, x='gdpPercap', y='Individuals using the Internet (% of population)', ci=None)
-# st.pyplot(fig2)
+st.pyplot(lm)
